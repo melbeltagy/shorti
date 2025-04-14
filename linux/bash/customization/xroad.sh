@@ -24,6 +24,9 @@ alias ui='pnpm dev'
 alias umd='cd $XROAD_UTILS_HOME/xroad-ext-opmon/docker/local-dev/'
 alias md='cd $XROAD_METRICS_PATH/docker'
 
+alias ss-st='./gradlew :security-server:system-test:systemTest -PsystemTestSsPackageHost=https://s3-eu-west-1.amazonaws.com/niis-xroad-development'
+alias cj='./gradlew clean build -x intTest -x systemTest'
+
 # cx = Curl (or Call :D) X-road as a client
 function cx() {
   local count=${1}  # count of requests, mandatory
