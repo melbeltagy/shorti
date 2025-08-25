@@ -14,7 +14,7 @@ function d() {
     else
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}" | grep $2
       echo "============================================"
-      echo "Found $(docker container ls -a | grep -vv "CONTAINER ID" | wc -l) containers."
+      echo "Found $(docker container ls -a | grep $2 | wc -l) containers."
     fi
   elif [ $1 == "lsp" ]; then
     if [ -z $2 ]; then
