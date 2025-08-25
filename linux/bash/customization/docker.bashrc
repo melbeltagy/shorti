@@ -7,9 +7,15 @@ function d() {
   if [ -z $1 ]; then
     echo "What command? Options: ls, lsp, bash, sh, tail, start, stop, rm, or logs?";
   elif [ $1 == "ls" ]; then
+    if [ -z $2 ]; then
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}"
       echo "============================================"
       echo "Found $(docker container ls -a | grep -vv "CONTAINER ID" | wc -l) containers."
+    else
+      docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}" | grep $2
+      echo "============================================"
+      echo "Found $(docker container ls -a | grep -vv "CONTAINER ID" | wc -l) containers."
+    fi
   elif [ $1 == "lsp" ]; then
     if [ -z $2 ]; then
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
