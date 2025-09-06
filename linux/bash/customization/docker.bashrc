@@ -453,3 +453,34 @@ function n() {
   fi
 }
 
+function c() {
+  if [ -z "$1" ] || [ "$1" == "help" ]; then
+    echo "Usage: c <to|from> <container> <src> <dest>"
+    echo "Commands:"
+    echo "  to <container> <src> <dest>     Copy file/dir from host to container"
+    echo "  from <container> <src> <dest>   Copy file/dir from container to host"
+    echo ""
+    echo "Examples:"
+    echo "  c to mycontainer ./file.txt /tmp/file.txt"
+    echo "  c from mycontainer /tmp/file.txt ./file.txt"
+    return
+  fi
+
+  if [ "$1" == "to" ]; then
+    if [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+      echo "Usage: c to <container> <src> <dest>"
+      return 1
+    fi
+    docker cp "$3" "$2":"$4"
+  elif [ "$1" == "from" ]; then
+    if [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+      echo "Usage: c from <container> <src> <dest>"
+      return 1
+    fi
+    docker cp "$2":"$3" "$4"
+  else
+    echo "Unknown command: $1. Use 'c help' for usage."
+    return 1
+  fi
+}
+
