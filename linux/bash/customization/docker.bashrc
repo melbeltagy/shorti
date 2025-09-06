@@ -11,7 +11,7 @@ function d() {
     echo "  bash <container> [user]   Exec into container with bash (optionally as user)"
     echo "  sh <container> [user]     Exec into container with sh (optionally as user)"
     echo "  tail <pattern>            Tail logs for containers matching pattern"
-    echo "  log                       Show logs for all containers"
+    echo "  logs [pattern]            Show logs for all or matching containers"
     echo "  rm [pattern]              Remove containers (all or matching pattern)"
     echo "  start [pattern]           Start containers (all or matching pattern)"
     echo "  stop [pattern]            Stop containers (all or matching pattern)"
@@ -22,10 +22,9 @@ function d() {
     echo "  d bash mycontainer"
     echo "  d bash mycontainer root"
     echo "  d tail web"
+    echo "  d logs myapp"
     echo "  d rm oldapp"
     echo "  d stop myapp"
-    return
-  fi
 
   elif [ $1 == "ls" ]; then
     if [ -z $2 ]; then
@@ -69,9 +68,14 @@ function d() {
     echo "Executing tail command on $(docker container ls -a | grep $2 | wc -l) containers..."
     d ls | grep $2 | awk '{print $1}' | xargs docker logs -f
 
-  elif [ $1 == "log" ]; then
-    echo "Executing log command on $(docker container ls -a | grep -vv "CONTAINER ID" | wc -l) containers..."
-    docker $1 $(docker ps -q -a)
+  elif [ $1 == "logs" ]; then
+    if [ -z "$2" ]; then
+      echo "Showing logs for all containers..."
+      docker ps -a --format '{{.ID}}' | xargs -r -I {} sh -c 'echo "===== Logs for container: {} ====="; docker logs {}'
+    else
+      echo "Showing logs for containers matching '$2'..."
+      docker container ls -a --format '{{.ID}}\t{{.Names}}' | grep "$2" | awk '{print $1}' | xargs -r -I {} sh -c 'echo "===== Logs for container: {} ====="; docker logs {}'
+    fi
 
   elif [ $1 == "rm" ]; then
     if [ -z $2 ]; then
@@ -121,8 +125,6 @@ function i() {
     echo "  i ls ubuntu"
     echo "  i update all"
     echo "  i rm oldimage"
-    return
-  fi
 
   else
     if [ $1 == "ls" ]; then
