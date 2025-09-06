@@ -6,14 +6,26 @@ function d() {
   if [ -z "$1" ] || [ "$1" == "help" ]; then
     echo "Usage: d <command> [container] [user]"
     echo "Commands:"
-    echo "  ls [pattern]         List all containers (optionally filter by pattern)"
-    echo "  lsp [pattern]        List containers with ports (optionally filter by pattern)"
-    echo "  bash <container> [user]  Exec into container with bash (optionally as user)"
-    echo "  sh <container> [user]    Exec into container with sh (optionally as user)"
-    echo "  tail <pattern>        Tail logs for containers matching pattern"
-    echo "  log                   Show logs for all containers"
-    echo "  rm [pattern]          Remove containers (all or matching pattern)"
-    echo "  start|stop [pattern]  Start/stop containers (all or matching pattern)"
+    echo "  ls [pattern]              List all containers (optionally filter by pattern)"
+    echo "  lsp [pattern]             List containers with ports (optionally filter by pattern)"
+    echo "  bash <container> [user]   Exec into container with bash (optionally as user)"
+    echo "  sh <container> [user]     Exec into container with sh (optionally as user)"
+    echo "  tail <pattern>            Tail logs for containers matching pattern"
+    echo "  log                       Show logs for all containers"
+    echo "  rm [pattern]              Remove containers (all or matching pattern)"
+    echo "  start [pattern]           Start containers (all or matching pattern)"
+    echo "  stop [pattern]            Stop containers (all or matching pattern)"
+    echo ""
+    echo "Examples:"
+    echo "  d ls"
+    echo "  d ls myapp"
+    echo "  d bash mycontainer"
+    echo "  d bash mycontainer root"
+    echo "  d tail web"
+    echo "  d rm oldapp"
+    echo "  d stop myapp"
+    return
+  fi
 
   elif [ $1 == "ls" ]; then
     if [ -z $2 ]; then
@@ -100,9 +112,17 @@ function i() {
   if [ -z "$1" ] || [ "$1" == "help" ]; then
     echo "Usage: i <command> [pattern]"
     echo "Commands:"
-    echo "  ls [pattern]         List all images (optionally filter by pattern)"
-    echo "  update all           Pull all images"
-    echo "  rm <pattern>         Remove images matching pattern"
+    echo "  ls [pattern]              List all images (optionally filter by pattern)"
+    echo "  update all                Pull all images"
+    echo "  rm <pattern>              Remove images matching pattern"
+    echo ""
+    echo "Examples:"
+    echo "  i ls"
+    echo "  i ls ubuntu"
+    echo "  i update all"
+    echo "  i rm oldimage"
+    return
+  fi
 
   else
     if [ $1 == "ls" ]; then
