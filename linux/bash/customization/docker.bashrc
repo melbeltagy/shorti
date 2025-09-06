@@ -33,7 +33,7 @@ function d() {
     if [ -z "$1" ]; then
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}"
       echo "============================================"
-      echo "Found $(docker container ls -a | grep -v \"CONTAINER ID\" | wc -l) containers."
+      echo "Found $(docker container ls -a | grep -v "CONTAINER ID" | wc -l) containers."
     else
       local PATTERN="$(IFS="|"; echo "$*")"
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}" | grep -E "$PATTERN"
@@ -45,7 +45,7 @@ function d() {
     if [ -z "$1" ]; then
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
       echo "============================================"
-      echo "Found $(docker container ls -a | grep -v \"CONTAINER ID\" | wc -l) containers."
+      echo "Found $(docker container ls -a | grep -v "CONTAINER ID" | wc -l) containers."
     else
       local PATTERN="$(IFS="|"; echo "$*")"
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E "$PATTERN"
@@ -107,7 +107,7 @@ function d() {
     CMD="$1"
     shift
     if [ -z "$1" ]; then
-      echo "Executing [$CMD] command on $(docker container ls -a | grep -v \"CONTAINER ID\" | wc -l) containers..."
+      echo "Executing [$CMD] command on $(docker container ls -a | grep -v "CONTAINER ID" | wc -l) containers..."
       docker $CMD $(docker ps -q -a)
     else
       local PATTERN="$(IFS="|"; echo "$*")"
