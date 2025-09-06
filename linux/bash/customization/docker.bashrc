@@ -15,6 +15,7 @@ function d() {
     echo "  rm [pattern ...]              Remove containers (all or matching patterns)"
     echo "  start [pattern ...]           Start containers (all or matching patterns)"
     echo "  stop [pattern ...]            Stop containers (all or matching patterns)"
+    echo "  prune                         Remove all stopped containers (with confirmation)"
     echo ""
     echo "Examples:"
     echo "  d ls"
@@ -25,6 +26,7 @@ function d() {
     echo "  d logs myapp"
     echo "  d rm oldapp tempapp"
     echo "  d stop myapp web"
+    echo "  d prune"
     return
   fi
 
@@ -120,6 +122,13 @@ function d() {
       echo "Executing [$CMD] command on $COUNT containers..."
       echo "$IDS" | xargs -r docker container $CMD
     fi
+  elif [ "$1" == "prune" ]; then
+    read -p "This will remove all stopped containers. Continue? (y/N): " confirm
+    if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+      docker container prune
+    else
+      echo "Operation cancelled."
+    fi
   else
     echo "Unknown command: $1. Use 'd help' for usage."
     return 1
@@ -134,6 +143,7 @@ function i() {
     echo "  update [pattern ...]          Pull all or matching images"
     echo "  rm [pattern ...]              Remove images matching one or more patterns"
     echo "  inspect [pattern ...]         Inspect images matching one or more patterns"
+    echo "  prune                         Remove unused images (with confirmation)"
     echo ""
     echo "Examples:"
     echo "  i ls"
@@ -143,6 +153,7 @@ function i() {
     echo "  i rm oldimage tempimage"
     echo "  i inspect myimage"
     echo "  i inspect ubuntu alpine"
+    echo "  i prune"
     return
   fi
 
@@ -213,6 +224,13 @@ function i() {
       echo "===== Inspecting image: $img ====="
       docker image inspect "$img"
     done
+  elif [ "$1" == "prune" ]; then
+    read -p "This will remove all unused images. Continue? (y/N): " confirm
+    if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+      docker image prune
+    else
+      echo "Operation cancelled."
+    fi
   else
     echo "Unknown command: $1. Use 'i help' for usage."
     return 1
@@ -226,6 +244,7 @@ function v() {
     echo "  ls [pattern ...]             List all volumes (optionally filter by one or more patterns)"
     echo "  rm [pattern ...]             Remove all or matching volumes (with confirmation)"
     echo "  inspect [pattern ...]        Inspect all or matching volumes"
+    echo "  prune                        Remove all unused volumes (with confirmation)"
     echo ""
     echo "Examples:"
     echo "  v ls"
@@ -234,6 +253,7 @@ function v() {
     echo "  v rm oldvolume tempvolume"
     echo "  v inspect"
     echo "  v inspect myvolume cache"
+    echo "  v prune"
     return
   fi
 
@@ -306,6 +326,13 @@ function v() {
         echo "===== Inspecting volume: $v ====="
         docker volume inspect "$v"
       done
+    fi
+  elif [ "$1" == "prune" ]; then
+    read -p "This will remove all unused volumes. Continue? (y/N): " confirm
+    if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+      docker volume prune
+    else
+      echo "Operation cancelled."
     fi
   else
     echo "Unknown command: $1. Use 'v help' for usage."
