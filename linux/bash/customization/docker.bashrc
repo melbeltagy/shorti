@@ -14,11 +14,6 @@ function d() {
     echo "  log                   Show logs for all containers"
     echo "  rm [pattern]          Remove containers (all or matching pattern)"
     echo "  start|stop [pattern]  Start/stop containers (all or matching pattern)"
-    return
-  fi
-
-  if [ -z $1 ]; then
-    echo "What command? Options: ls, lsp, bash, sh, tail, start, stop, rm, or logs?";
 
   elif [ $1 == "ls" ]; then
     if [ -z $2 ]; then
@@ -108,11 +103,6 @@ function i() {
     echo "  ls [pattern]         List all images (optionally filter by pattern)"
     echo "  update all           Pull all images"
     echo "  rm <pattern>         Remove images matching pattern"
-    return
-  fi
-
-  if [ -z $1 ]; then
-    echo "What command? Options: ls, update all, rm?";
 
   else
     if [ $1 == "ls" ]; then
