@@ -10,6 +10,8 @@ function d() {
     echo "  lsp [pattern ...]             List containers with ports (optionally filter by one or more patterns)"
     echo "  bash <container> [user]       Exec into container with bash (optionally as user)"
     echo "  sh <container> [user]         Exec into container with sh (optionally as user)"
+    echo "  cp to <container> <src> <dest>     Copy file/dir from host to container"
+    echo "  cp from <container> <src> <dest>   Copy file/dir from container to host"
     echo "  tail <pattern>                Tail logs for containers matching pattern"
     echo "  logs [pattern]                Show logs for all or matching containers"
     echo "  rm [pattern ...]              Remove containers (all or matching patterns)"
@@ -22,6 +24,8 @@ function d() {
     echo "  d ls myapp web"
     echo "  d bash mycontainer"
     echo "  d bash mycontainer root"
+    echo "  d cp to mycontainer ./local-file.txt /tmp/file.txt"
+    echo "  d cp from mycontainer /tmp/file.txt ./local-file.txt"
     echo "  d tail web"
     echo "  d logs myapp"
     echo "  d rm oldapp tempapp"
@@ -67,6 +71,32 @@ function d() {
       docker exec -it $2 /bin/sh
     else
       docker exec -u $3 -it $2 /bin/sh
+    fi
+  elif [ "$1" == "cp" ]; then
+    if [ -z "$2" ] || [ "$2" == "help" ]; then
+      echo "Usage: d cp <to|from> <container> <src> <dest>"
+      echo "  to <container> <src> <dest>     Copy file/dir from host to container"
+      echo "  from <container> <src> <dest>   Copy file/dir from container to host"
+      echo "Examples:"
+      echo "  d cp to mycontainer ./file.txt /tmp/file.txt"
+      echo "  d cp from mycontainer /tmp/file.txt ./file.txt"
+      return
+    fi
+    if [ "$2" == "to" ]; then
+      if [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ]; then
+        echo "Usage: d cp to <container> <src> <dest>"
+        return 1
+      fi
+      docker cp "$4" "$3":"$5"
+    elif [ "$2" == "from" ]; then
+      if [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ]; then
+        echo "Usage: d cp from <container> <src> <dest>"
+        return 1
+      fi
+      docker cp "$3":"$4" "$5"
+    else
+      echo "Unknown cp option: $2. Use 'd cp help' for usage."
+      return 1
     fi
   elif [ "$1" == "tail" ]; then
     echo "Executing tail command on $(docker container ls -a | grep $2 | wc -l) containers..."
@@ -449,37 +479,6 @@ function n() {
     fi
   else
     echo "Unknown command: $1. Use 'n help' for usage."
-    return 1
-  fi
-}
-
-function c() {
-  if [ -z "$1" ] || [ "$1" == "help" ]; then
-    echo "Usage: c <to|from> <container> <src> <dest>"
-    echo "Commands:"
-    echo "  to <container> <src> <dest>     Copy file/dir from host to container"
-    echo "  from <container> <src> <dest>   Copy file/dir from container to host"
-    echo ""
-    echo "Examples:"
-    echo "  c to mycontainer ./file.txt /tmp/file.txt"
-    echo "  c from mycontainer /tmp/file.txt ./file.txt"
-    return
-  fi
-
-  if [ "$1" == "to" ]; then
-    if [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
-      echo "Usage: c to <container> <src> <dest>"
-      return 1
-    fi
-    docker cp "$3" "$2":"$4"
-  elif [ "$1" == "from" ]; then
-    if [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
-      echo "Usage: c from <container> <src> <dest>"
-      return 1
-    fi
-    docker cp "$2":"$3" "$4"
-  else
-    echo "Unknown command: $1. Use 'c help' for usage."
     return 1
   fi
 }
