@@ -4,71 +4,72 @@
 
 function d() {
   if [ -z "$1" ] || [ "$1" == "help" ]; then
-    echo "Usage: d <command> [container] [user]"
+    echo "Usage: d <command> [pattern ...] [user]"
     echo "Commands:"
-    echo "  ls [pattern]              List all containers (optionally filter by pattern)"
-    echo "  lsp [pattern]             List containers with ports (optionally filter by pattern)"
-    echo "  bash <container> [user]   Exec into container with bash (optionally as user)"
-    echo "  sh <container> [user]     Exec into container with sh (optionally as user)"
-    echo "  tail <pattern>            Tail logs for containers matching pattern"
-    echo "  logs [pattern]            Show logs for all or matching containers"
-    echo "  rm [pattern]              Remove containers (all or matching pattern)"
-    echo "  start [pattern]           Start containers (all or matching pattern)"
-    echo "  stop [pattern]            Stop containers (all or matching pattern)"
+    echo "  ls [pattern ...]              List all containers (optionally filter by one or more patterns)"
+    echo "  lsp [pattern ...]             List containers with ports (optionally filter by one or more patterns)"
+    echo "  bash <container> [user]       Exec into container with bash (optionally as user)"
+    echo "  sh <container> [user]         Exec into container with sh (optionally as user)"
+    echo "  tail <pattern>                Tail logs for containers matching pattern"
+    echo "  logs [pattern]                Show logs for all or matching containers"
+    echo "  rm [pattern ...]              Remove containers (all or matching patterns)"
+    echo "  start [pattern ...]           Start containers (all or matching patterns)"
+    echo "  stop [pattern ...]            Stop containers (all or matching patterns)"
     echo ""
     echo "Examples:"
     echo "  d ls"
-    echo "  d ls myapp"
+    echo "  d ls myapp web"
     echo "  d bash mycontainer"
     echo "  d bash mycontainer root"
     echo "  d tail web"
     echo "  d logs myapp"
-    echo "  d rm oldapp"
-    echo "  d stop myapp"
+    echo "  d rm oldapp tempapp"
+    echo "  d stop myapp web"
+    return
+  fi
 
-  elif [ $1 == "ls" ]; then
-    if [ -z $2 ]; then
+  if [ "$1" == "ls" ]; then
+    shift
+    if [ -z "$1" ]; then
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}"
       echo "============================================"
-      echo "Found $(docker container ls -a | grep -vv "CONTAINER ID" | wc -l) containers."
+      echo "Found $(docker container ls -a | grep -v \"CONTAINER ID\" | wc -l) containers."
     else
-      docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}" | grep $2
+      local PATTERN="$(IFS="|"; echo "$*")"
+      docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.State}}\t{{.Status}}\t{{.Networks}}" | grep -E "$PATTERN"
       echo "============================================"
-      echo "Found $(docker container ls -a | grep $2 | wc -l) containers."
+      echo "Found $(docker container ls -a | grep -E "$PATTERN" | wc -l) containers."
     fi
-
-  elif [ $1 == "lsp" ]; then
-    if [ -z $2 ]; then
+  elif [ "$1" == "lsp" ]; then
+    shift
+    if [ -z "$1" ]; then
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
       echo "============================================"
-      echo "Found $(docker container ls -a | grep -vv "CONTAINER ID" | wc -l) containers."
+      echo "Found $(docker container ls -a | grep -v \"CONTAINER ID\" | wc -l) containers."
     else
-      docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep $2
+      local PATTERN="$(IFS="|"; echo "$*")"
+      docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E "$PATTERN"
       echo "============================================"
-      echo "Found $(docker container ls -a | grep $2 | wc -l) containers."
+      echo "Found $(docker container ls -a | grep -E "$PATTERN" | wc -l) containers."
     fi
-
-  elif [ $1 == "bash" ]; then
+  elif [ "$1" == "bash" ]; then
     echo "Executing bash command on $(docker container ls -a | grep $2 | wc -l) containers..."
     if [ -z $3 ]; then
       docker exec -it $2 /bin/bash
     else
       docker exec -u $3 -it $2 /bin/bash
     fi
-
-  elif [ $1 == "sh" ]; then
+  elif [ "$1" == "sh" ]; then
     echo "Executing sh command on $(docker container ls -a | grep $2 | wc -l) containers..."
     if [ -z $3 ]; then
       docker exec -it $2 /bin/sh
     else
       docker exec -u $3 -it $2 /bin/sh
     fi
-
-  elif [ $1 == "tail" ]; then
+  elif [ "$1" == "tail" ]; then
     echo "Executing tail command on $(docker container ls -a | grep $2 | wc -l) containers..."
     d ls | grep $2 | awk '{print $1}' | xargs docker logs -f
-
-  elif [ $1 == "logs" ]; then
+  elif [ "$1" == "logs" ]; then
     if [ -z "$2" ]; then
       echo "Showing logs for all containers..."
       docker ps -a --format '{{.ID}}' | xargs -r -I {} sh -c 'echo "===== Logs for container: {} ====="; docker logs {}'
@@ -76,39 +77,52 @@ function d() {
       echo "Showing logs for containers matching '$2'..."
       docker container ls -a --format '{{.ID}}\t{{.Names}}' | grep "$2" | awk '{print $1}' | xargs -r -I {} sh -c 'echo "===== Logs for container: {} ====="; docker logs {}'
     fi
-
-  elif [ $1 == "rm" ]; then
-    if [ -z $2 ]; then
+  elif [ "$1" == "rm" ]; then
+    shift
+    if [ -z "$1" ]; then
       read -p "Removing all containers: Do you want to continue? (y/N)?" confirm
       if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
         docker rm $(docker ps -q -a)
       else
         echo "Operation cancelled."
       fi
-
     else
-      shift
       local PATTERN="$(IFS="|"; echo "$*")"
-      echo "Removing the following $(docker container ls -a | grep -E $PATTERN | wc -l) containers:"
-      d ls | grep -E $PATTERN
+      local COUNT=$(docker container ls -a | grep -E "$PATTERN" | wc -l)
+      if [ $COUNT -eq 0 ]; then
+        echo "No containers match the pattern."
+        return 1
+      fi
+      echo "Removing the following $COUNT containers:"
+      d ls | grep -E "$PATTERN"
       read -p "Do you want to continue? (y/N)?" confirm
       if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
-        d ls | grep -E $PATTERN | awk '{print $1}' | xargs docker container rm
+        d ls | grep -E "$PATTERN" | awk '{print $1}' | xargs docker container rm
         echo "Containers removed."
       else
         echo "Operation cancelled."
       fi
     fi
-
-  else
-    # start, stop
-    if [ -z $2 ]; then
-      echo "Executing [$1] command on $(docker container ls -a | grep -vv "CONTAINER ID" | wc -l) containers..."
-      docker $1 $(docker ps -q -a)
+  elif [ "$1" == "start" ] || [ "$1" == "stop" ]; then
+    CMD="$1"
+    shift
+    if [ -z "$1" ]; then
+      echo "Executing [$CMD] command on $(docker container ls -a | grep -v \"CONTAINER ID\" | wc -l) containers..."
+      docker $CMD $(docker ps -q -a)
     else
-      echo "Executing [$1] command on $(docker container ls -a | grep $2 | wc -l) containers..."
-      docker container ls -a | grep $2 | awk '{print $1}' | xargs docker container $1
+      local PATTERN="$(IFS="|"; echo "$*")"
+      local IDS=$(docker container ls -a | grep -E "$PATTERN" | awk '{print $1}')
+      local COUNT=$(echo "$IDS" | wc -w)
+      if [ -z "$IDS" ]; then
+        echo "No containers match the pattern."
+        return 1
+      fi
+      echo "Executing [$CMD] command on $COUNT containers..."
+      echo "$IDS" | xargs -r docker container $CMD
     fi
+  else
+    echo "Unknown command: $1. Use 'd help' for usage."
+    return 1
   fi
 }
 
