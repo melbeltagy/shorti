@@ -8,6 +8,7 @@ function d() {
     echo "Commands:"
     echo "  ls [pattern ...]              List all containers (optionally filter by one or more patterns)"
     echo "  lsp [pattern ...]             List containers with ports (optionally filter by one or more patterns)"
+    echo "  lsv [volume ...]              List containers with volume info (optionally filter by one or more partial volume names)"
     echo "  bash <container> [user]       Exec into container with bash (optionally as user)"
     echo "  sh <container> [user]         Exec into container with sh (optionally as user)"
     echo "  cp to <container> <src> <dest>     Copy file/dir from host to container"
@@ -22,6 +23,9 @@ function d() {
     echo "Examples:"
     echo "  d ls"
     echo "  d ls myapp web"
+    echo "  d lsv" 
+    echo "  d lsv data" 
+    echo "  d lsv a13a91 1c3279d"
     echo "  d bash mycontainer"
     echo "  d bash mycontainer root"
     echo "  d cp to mycontainer ./local-file.txt /tmp/file.txt"
@@ -57,6 +61,31 @@ function d() {
       docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E "$PATTERN"
       echo "============================================"
       echo "Found $(docker container ls -a | grep -E "$PATTERN" | wc -l) containers."
+    fi
+  elif [ "$1" == "lsv" ]; then
+    shift
+    if [ -z "$1" ]; then
+      docker container ls -a --format "table {{.ID}}\t{{.Names}}\t{{.Mounts}}"
+      echo "============================================"
+      echo "Found $(docker container ls -a | grep -v "CONTAINER ID" | wc -l) containers."
+    else
+      # Accept partial volume names
+      local FILTERS=()
+      while [ -n "$1" ]; do
+        # Find all matching volume names for the partial value
+        local VOLS=$(docker volume ls --format '{{.Name}}' | grep "$1")
+        for v in $VOLS; do
+          FILTERS+=(--filter volume="$v")
+        done
+        shift
+      done
+      if [ ${#FILTERS[@]} -eq 0 ]; then
+        echo "No matching volumes found."
+        return 0
+      fi
+      docker container ls -a "${FILTERS[@]}" --format "table {{.ID}}\t{{.Names}}\t{{.Mounts}}"
+      echo "============================================"
+      echo "Found $(docker container ls -a "${FILTERS[@]}" | grep -v "CONTAINER ID" | wc -l) containers."
     fi
   elif [ "$1" == "bash" ]; then
     echo "Executing bash command on $(docker container ls -a | grep $2 | wc -l) containers..."
