@@ -24,92 +24,111 @@ function n() {
     return
   fi
 
-  if [ "$1" == "ls" ]; then
-    shift
-    if [ -z "$1" ]; then
-      docker network ls
-      echo "============================================"
-      echo "Found $(docker network ls | grep -v 'NETWORK ID' | wc -l) networks."
-    else
-      local PATTERN="$(IFS="|"; echo "$*")"
-      docker network ls | grep -E "$PATTERN"
-      echo "============================================"
-      echo "Found $(docker network ls | grep -E "$PATTERN" | wc -l) networks."
-    fi
-  elif [ "$1" == "inspect" ]; then
-    shift
-    if [ -z "$1" ]; then
-      echo "Which network to inspect? Specify one or more patterns."
-      return 1
-    fi
-    local PATTERN="$(IFS="|"; echo "$*")"
-    local NETWORKS=$(docker network ls | grep -E "$PATTERN" | awk '{print $2}')
-    if [ -z "$NETWORKS" ]; then
-      echo "No networks match the pattern."
-      return 1
-    fi
-    for net in $NETWORKS; do
-      echo "===== Inspecting network: $net ====="
-      docker network inspect "$net"
-    done
-  elif [ "$1" == "rm" ]; then
-    shift
-    if [ -z "$1" ]; then
-      echo "Which network to remove? Specify one or more patterns."
-      return 1
-    fi
-    local PATTERN="$(IFS="|"; echo "$*")"
-    local NETWORKS=$(docker network ls | grep -E "$PATTERN" | awk '{print $2}')
-    local COUNT=$(echo "$NETWORKS" | wc -w)
-    if [ -z "$NETWORKS" ]; then
-      echo "No networks match the pattern."
-      return 1
-    fi
-    echo "Removing the following $COUNT networks:"
-    docker network ls | grep -E "$PATTERN"
-    read -p "Do you want to continue? (y/N)?" confirm
-    if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
-      echo "$NETWORKS" | xargs -r docker network rm
-      echo "Networks removed."
-    else
-      echo "Operation cancelled."
-    fi
-  elif [ "$1" == "create" ]; then
-    if [ -z "$2" ]; then
-      echo "Please specify a network name."
-      return 1
-    fi
-    docker network create "$2"
-  elif [ "$1" == "connect" ]; then
-    if [ -z "$2" ] || [ -z "$3" ]; then
-      echo "Usage: n connect <network> <container ...>"
-      return 1
-    fi
-    local NET="$2"
-    shift 2
-    for c in "$@"; do
-      docker network connect "$NET" "$c"
-    done
-  elif [ "$1" == "disconnect" ]; then
-    if [ -z "$2" ] || [ -z "$3" ]; then
-      echo "Usage: n disconnect <network> <container ...>"
-      return 1
-    fi
-    local NET="$2"
-    shift 2
-    for c in "$@"; do
-      docker network disconnect "$NET" "$c"
-    done
-  elif [ "$1" == "prune" ]; then
-    read -p "This will remove all unused networks. Continue? (y/N): " confirm
-    if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
-      docker network prune
-    else
-      echo "Operation cancelled."
-    fi
+  local CMD="$1"
+  shift
+  case "$CMD" in
+    ls)         _n_ls "$@" ;;
+    inspect)    _n_inspect "$@" ;;
+    rm)         _n_rm "$@" ;;
+    create)     _n_create "$@" ;;
+    connect)    _n_connect "$@" ;;
+    disconnect) _n_disconnect "$@" ;;
+    prune)      _n_prune ;;
+    *)          echo "Unknown command: $CMD. Use 'n help' for usage."; return 1 ;;
+  esac
+}
+
+_n_ls() {
+  if [ -z "$1" ]; then
+    docker network ls
+    echo "============================================"
+    echo "Found $(docker network ls | grep -v 'NETWORK ID' | wc -l) networks."
   else
-    echo "Unknown command: $1. Use 'n help' for usage."
+    local PATTERN="$(IFS="|"; echo "$*")"
+    docker network ls | grep -E "$PATTERN"
+    echo "============================================"
+    echo "Found $(docker network ls | grep -E "$PATTERN" | wc -l) networks."
+  fi
+}
+
+_n_inspect() {
+  if [ -z "$1" ]; then
+    echo "Which network to inspect? Specify one or more patterns."
     return 1
+  fi
+  local PATTERN="$(IFS="|"; echo "$*")"
+  local NETWORKS=$(docker network ls | grep -E "$PATTERN" | awk '{print $2}')
+  if [ -z "$NETWORKS" ]; then
+    echo "No networks match the pattern."
+    return 1
+  fi
+  for net in $NETWORKS; do
+    echo "===== Inspecting network: $net ====="
+    docker network inspect "$net"
+  done
+}
+
+_n_rm() {
+  if [ -z "$1" ]; then
+    echo "Which network to remove? Specify one or more patterns."
+    return 1
+  fi
+  local PATTERN="$(IFS="|"; echo "$*")"
+  local NETWORKS=$(docker network ls | grep -E "$PATTERN" | awk '{print $2}')
+  local COUNT=$(echo "$NETWORKS" | wc -w)
+  if [ -z "$NETWORKS" ]; then
+    echo "No networks match the pattern."
+    return 1
+  fi
+  echo "Removing the following $COUNT networks:"
+  docker network ls | grep -E "$PATTERN"
+  read -p "Do you want to continue? (y/N)?" confirm
+  if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+    echo "$NETWORKS" | xargs -r docker network rm
+    echo "Networks removed."
+  else
+    echo "Operation cancelled."
+  fi
+}
+
+_n_create() {
+  if [ -z "$1" ]; then
+    echo "Please specify a network name."
+    return 1
+  fi
+  docker network create "$1"
+}
+
+_n_connect() {
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "Usage: n connect <network> <container ...>"
+    return 1
+  fi
+  local NET="$1"
+  shift
+  for c in "$@"; do
+    docker network connect "$NET" "$c"
+  done
+}
+
+_n_disconnect() {
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "Usage: n disconnect <network> <container ...>"
+    return 1
+  fi
+  local NET="$1"
+  shift
+  for c in "$@"; do
+    docker network disconnect "$NET" "$c"
+  done
+}
+
+_n_prune() {
+  read -p "This will remove all unused networks. Continue? (y/N): " confirm
+  if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+    docker network prune
+  else
+    echo "Operation cancelled."
   fi
 }
 
