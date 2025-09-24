@@ -26,3 +26,5 @@ function gp() {
       echo "Operation cancelled."
   fi    
 }
+
+alias cln='git clone'
