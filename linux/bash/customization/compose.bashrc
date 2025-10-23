@@ -6,6 +6,7 @@ function dc() {
     echo "  stop [profile]    Stop all containers (or for a profile) in compose"
     echo "  down [profile]    Take down all containers (or for a profile) in compose"
     echo "  pull [profile]    Pull images for all containers (or for a profile) in compose"
+    echo "  build [profile]   Build images for all containers (or for a profile) in compose"
     echo ""
     echo "Examples:"
     echo "  dc up"
@@ -13,6 +14,7 @@ function dc() {
     echo "  dc stop"
     echo "  dc down prod"
     echo "  dc pull"
+    echo "  dc build"
     return
   fi
 
@@ -47,6 +49,14 @@ function dc() {
     else
       echo "Pulling images for profile '$2' in compose..."
       docker compose --profile "$2" pull
+    fi
+  elif [ "$1" == "build" ]; then
+    if [ -z "$2" ]; then
+      echo "Building images for all containers in compose..."
+      docker compose build
+    else
+      echo "Building images for profile '$2' in compose..."
+      docker compose --profile "$2" build
     fi
   else
     echo "Unknown command: $1. Use 'dc help' for usage."
