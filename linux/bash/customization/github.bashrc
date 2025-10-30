@@ -27,4 +27,4 @@ function gp() {
   fi    
 }
 
-alias cln='git clone'
+alias clone='git clone'
