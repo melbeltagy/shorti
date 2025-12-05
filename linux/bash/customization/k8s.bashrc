@@ -36,59 +36,63 @@ function _k_describe() {
 }
 
 function _k_logs() {
-		if [ -z "$2" ]; then
+		if [ -z "$1" ]; then
 			echo "Usage: k logs <pod> [container]"
 			return
 		fi
-		if [ -z "$3" ]; then
-			kubectl logs "$2"
+		if [ -z "$2" ]; then
+			kubectl logs "$1"
 		else
-			kubectl logs "$2" -c "$3"
+			kubectl logs "$1" -c "$2"
 		fi
 }
 
 function _k_exec() {
-		if [ -z "$2" ]; then
+		if [ -z "$1" ]; then
 			echo "Usage: k exec <pod> [container] [cmd]"
 			return
 		fi
-		if [ -z "$3" ]; then
-			kubectl exec -it "$2" -- /bin/sh
-		elif [[ "$3" == /* || "$3" == "sh" || "$3" == "bash" ]]; then
-			# If command is specified
-			shift 2
+		# No container and no cmd -> default to sh in pod
+		if [ -z "$2" ]; then
+			kubectl exec -it "$1" -- /bin/sh
+		# If second arg looks like a command, run it in the pod (no container)
+		elif [[ "$2" == /* || "$2" == "sh" || "$2" == "bash" ]]; then
 			kubectl exec -it "$1" -- "${@:2}"
+		# Container specified
 		else
-			kubectl exec -it "$2" -c "$3" -- /bin/sh
+			if [ -z "$3" ]; then
+				kubectl exec -it "$1" -c "$2" -- /bin/sh
+			else
+				kubectl exec -it "$1" -c "$2" -- "${@:3}"
+			fi
 		fi
 }
 
 function _k_bash() {
-		if [ -z "$2" ]; then
+		if [ -z "$1" ]; then
 			echo "Usage: k bash <pod> [container]"
 			return
 		fi
-		if [ -z "$3" ]; then
-			kubectl exec -it "$2" -- /bin/bash
+		if [ -z "$2" ]; then
+			kubectl exec -it "$1" -- /bin/bash
 		else
-			kubectl exec -it "$2" -c "$3" -- /bin/bash
+			kubectl exec -it "$1" -c "$2" -- /bin/bash
 		fi
 }
 
 function _k_sh() {
-		if [ -z "$2" ]; then
+		if [ -z "$1" ]; then
 			echo "Usage: k sh <pod> [container]"
 			return
 		fi
-		if [ -z "$3" ]; then
-			kubectl exec -it "$2" -- /bin/sh
+		if [ -z "$2" ]; then
+			kubectl exec -it "$1" -- /bin/sh
 		else
-			kubectl exec -it "$2" -c "$3" -- /bin/sh
+			kubectl exec -it "$1" -c "$2" -- /bin/sh
 		fi
 }
 
 function _k_apply() {
-		shift
 		if [ -z "$1" ]; then
 			echo "Usage: k apply <file>"
 			return
@@ -97,7 +101,6 @@ function _k_apply() {
 }
 
 function _k_delete() {
-		shift
 		if [ -z "$1" ] || [ -z "$2" ]; then
 			echo "Usage: k del <resource> <name/pattern>"
 			return
@@ -121,7 +124,6 @@ function _k_delete() {
 }
 
 function _k_cp() {
-		shift
 		if [ $# -ne 2 ]; then
 			echo "Usage: k cp <src> <dest>"
 			return
@@ -130,7 +132,6 @@ function _k_cp() {
 }
 
 function _k_edit() {
-		shift
 		if [ -z "$1" ] || [ -z "$2" ]; then
 			echo "Usage: k edit <resource> <name>"
 			return
@@ -139,7 +140,6 @@ function _k_edit() {
 }
 
 function _k_port_forward() {
-		shift
 		if [ $# -ne 2 ]; then
 			echo "Usage: k pf <pod/svc> <local>:<remote>"
 			return
@@ -264,6 +264,23 @@ function _k_ns() {
 	fi
 }
 
+function _k_tail() {
+		# Usage: k tail <pod> [container] [lines]
+		if [ -z "$1" ]; then
+			echo "Usage: k tail <pod> [container] [lines]"
+			return
+		fi
+		local POD="$1"
+		local CONTAINER="$2"
+		local LINES="${3:-100}"
+
+		if [ -z "$CONTAINER" ]; then
+			kubectl logs -f --tail="$LINES" "$POD"
+		else
+			kubectl logs -f --tail="$LINES" -c "$CONTAINER" "$POD"
+		fi
+}
+
 function _k_help() {
 		echo "Usage: k <command> [args...]"
 		echo "Commands:"
@@ -283,6 +300,7 @@ function _k_help() {
 		echo "      k ls help                               	Show usage and supported types for k ls"
 		echo "  ns [namespace]                       		Switch active namespace (empty to reset to default)"
 		echo "      k ns help                               	Show usage for k ns"
+		echo "  tail <pod> [container] [lines]      		Tail logs for a pod (optionally container), default tail=100 with follow"
 		echo ""
 		echo "Examples:"
 		echo "  k get pods"
@@ -319,6 +337,7 @@ function k() {
         types) _k_types;;
         ls) shift; _k_ls "$@";;
         ns) shift; _k_ns "$@";;
+        tail) shift; _k_tail "$@";;
         help|"" ) _k_help;;
         *) echo "Unknown command: $1. Use 'k help' for usage.";;
     esac
