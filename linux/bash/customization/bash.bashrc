@@ -7,4 +7,16 @@ else
     alias ll='ls -AlhF --color=auto'
 fi
 
-alias aup='sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && sudo apt autoclean -y'
+function print() {
+    echo -e "\033[0;32m$1\033[0m"
+}
+
+function aup() {
+    print "**** Updating package lists..."
+    sudo apt update
+    print "**** Upgrading installed packages..."
+    sudo apt upgrade -y 
+    print "**** Removing unnecessary packages..."
+    sudo apt autoremove -y && sudo apt autoclean -y
+    print "**** System update complete."
+}
