@@ -1,71 +1,34 @@
 # Docker network management shortcut
 
-function n() {
-  if [ -z "$1" ] || [ "$1" == "help" ]; then
-    echo "Usage: n <command> [pattern ...]"
-    echo "Commands:"
-    echo "  ls [pattern ...]                List all networks (optionally filter by one or more patterns)"
-    echo "  inspect [pattern ...]           Inspect one or more networks"
-    echo "  rm [pattern ...]                Remove one or more networks (with confirmation)"
-    echo "  create <name>                   Create a new network"
-    echo "  connect <network> <container ...>   Connect one or more containers to a network"
-    echo "  disconnect <network> <container ...> Disconnect one or more containers from a network"
-    echo "  prune                           Remove all unused networks (with confirmation)"
-    echo ""
-    echo "Examples:"
-    echo "  n ls"
-    echo "  n ls mynet bridge"
-    echo "  n inspect mynet"
-    echo "  n rm oldnet tempnet"
-    echo "  n create devnet"
-    echo "  n connect devnet mycontainer1 mycontainer2"
-    echo "  n disconnect devnet mycontainer1 mycontainer2"
-    echo "  n prune"
-    return
-  fi
-
-  local CMD="$1"
-  shift
-  case "$CMD" in
-    ls)         _n_ls "$@" ;;
-    inspect)    _n_inspect "$@" ;;
-    rm)         _n_rm "$@" ;;
-    create)     _n_create "$@" ;;
-    connect)    _n_connect "$@" ;;
-    disconnect) _n_disconnect "$@" ;;
-    prune)      _n_prune ;;
-    *)          echo "Unknown command: $CMD. Use 'n help' for usage."; return 1 ;;
-  esac
-}
-
 _n_ls() {
   if [ -z "$1" ]; then
-    docker network ls
+    docker network ls --format 'table {{.ID}}\t{{.Name}}\t{{.Driver}}\t{{.Scope}}'
     echo "============================================"
-    echo "Found $(docker network ls | grep -v 'NETWORK ID' | wc -l) networks."
+    echo "Found $(docker network ls -q | wc -l) networks."
   else
     local PATTERN="$(IFS="|"; echo "$*")"
-    docker network ls | grep -E "$PATTERN"
+    docker network ls --format 'table {{.ID}}\t{{.Name}}\t{{.Driver}}\t{{.Scope}}' | grep -E "^NETWORK|$PATTERN"
     echo "============================================"
-    echo "Found $(docker network ls | grep -E "$PATTERN" | wc -l) networks."
+    echo "Found $(docker network ls --format '{{.ID}}\t{{.Name}}\t{{.Driver}}\t{{.Scope}}' | grep -cE "$PATTERN") networks."
   fi
 }
 
-_n_inspect() {
+_n_info() {
   if [ -z "$1" ]; then
     echo "Which network to inspect? Specify one or more patterns."
     return 1
   fi
   local PATTERN="$(IFS="|"; echo "$*")"
-  local NETWORKS=$(docker network ls | grep -E "$PATTERN" | awk '{print $2}')
+  local NETWORKS
+  NETWORKS=$(docker network ls --format '{{.Name}}' | grep -E "$PATTERN")
   if [ -z "$NETWORKS" ]; then
     echo "No networks match the pattern."
     return 1
   fi
-  for net in $NETWORKS; do
+  while IFS= read -r net; do
     echo "===== Inspecting network: $net ====="
     docker network inspect "$net"
-  done
+  done <<< "$NETWORKS"
 }
 
 _n_rm() {
@@ -74,14 +37,16 @@ _n_rm() {
     return 1
   fi
   local PATTERN="$(IFS="|"; echo "$*")"
-  local NETWORKS=$(docker network ls | grep -E "$PATTERN" | awk '{print $2}')
-  local COUNT=$(echo "$NETWORKS" | wc -w)
+  local NETWORKS
+  NETWORKS=$(docker network ls --format '{{.Name}}' | grep -E "$PATTERN")
   if [ -z "$NETWORKS" ]; then
     echo "No networks match the pattern."
     return 1
   fi
+  local COUNT
+  COUNT=$(echo "$NETWORKS" | wc -l)
   echo "Removing the following $COUNT networks:"
-  docker network ls | grep -E "$PATTERN"
+  echo "$NETWORKS"
   read -p "Do you want to continue? (y/N)?" confirm
   if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
     echo "$NETWORKS" | xargs -r docker network rm
@@ -91,7 +56,7 @@ _n_rm() {
   fi
 }
 
-_n_create() {
+_n_mk() {
   if [ -z "$1" ]; then
     echo "Please specify a network name."
     return 1
@@ -99,9 +64,9 @@ _n_create() {
   docker network create "$1"
 }
 
-_n_connect() {
+_n_conn() {
   if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: n connect <network> <container ...>"
+    echo "Usage: n conn <network> <container ...>"
     return 1
   fi
   local NET="$1"
@@ -111,9 +76,9 @@ _n_connect() {
   done
 }
 
-_n_disconnect() {
+_n_disc() {
   if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: n disconnect <network> <container ...>"
+    echo "Usage: n disc <network> <container ...>"
     return 1
   fi
   local NET="$1"
@@ -132,3 +97,40 @@ _n_prune() {
   fi
 }
 
+function n() {
+  if [ -z "$1" ] || [ "$1" == "help" ]; then
+    echo "Usage: n <command> [pattern ...]"
+    echo "Commands:"
+    echo "  ls   [pattern ...]              List networks (filter optional)"
+    echo "  info [pattern ...]              Inspect one or more networks"
+    echo "  rm   [pattern ...]              Remove one or more networks (with confirmation)"
+    echo "  mk   <name>                     Create a new network"
+    echo "  conn <network> <container ...>  Connect one or more containers to a network"
+    echo "  disc <network> <container ...>  Disconnect one or more containers from a network"
+    echo "  prune                           Remove all unused networks (with confirmation)"
+    echo ""
+    echo "Examples:"
+    echo "  n ls"
+    echo "  n ls mynet bridge"
+    echo "  n info mynet"
+    echo "  n rm oldnet tempnet"
+    echo "  n mk devnet"
+    echo "  n conn devnet mycontainer1 mycontainer2"
+    echo "  n disc devnet mycontainer1 mycontainer2"
+    echo "  n prune"
+    return
+  fi
+
+  local CMD="$1"
+  shift
+  case "$CMD" in
+    ls)    _n_ls "$@" ;;
+    info)  _n_info "$@" ;;
+    rm)    _n_rm "$@" ;;
+    mk)    _n_mk "$@" ;;
+    conn)  _n_conn "$@" ;;
+    disc)  _n_disc "$@" ;;
+    prune) _n_prune ;;
+    *)     echo "Unknown command: $CMD. Use 'n help' for usage."; return 1 ;;
+  esac
+}
