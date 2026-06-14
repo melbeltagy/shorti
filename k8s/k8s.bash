@@ -8,8 +8,9 @@ function _k_get() {
 		if [ -z "$1" ]; then
 			kubectl get "$RESOURCE" --all-namespaces --output=wide
 		else
-			local PATTERN="$(IFS="|"; echo "$*")"
-			kubectl get "$RESOURCE" | grep -E "$PATTERN" --all-namespaces --output=wide
+			local PATTERN
+			PATTERN="$(IFS="|"; echo "$*")"
+			kubectl get "$RESOURCE" --all-namespaces --output=wide | grep -E "$PATTERN"
 		fi
 }
 
@@ -23,8 +24,10 @@ function _k_describe() {
 		if [ -z "$1" ]; then
 			kubectl describe "$RESOURCE"
 		else
-			local PATTERN="$(IFS="|"; echo "$*")"
-			local NAMES=$(kubectl get "$RESOURCE" -o name | grep -E "$PATTERN")
+			local PATTERN
+			PATTERN="$(IFS="|"; echo "$*")"
+			local NAMES
+			NAMES=$(kubectl get "$RESOURCE" -o name | grep -E "$PATTERN")
 			if [ -z "$NAMES" ]; then
 				echo "No $RESOURCE match the pattern."
 				return
@@ -36,15 +39,62 @@ function _k_describe() {
 }
 
 function _k_logs() {
+		local FOLLOW=""
+		if [ "$1" = "-f" ]; then
+			FOLLOW="-f"
+			shift
+		fi
 		if [ -z "$1" ]; then
-			echo "Usage: k logs <pod> [container]"
+			echo "Usage: k logs [-f] <pod> [container]"
 			return
 		fi
 		if [ -z "$2" ]; then
-			kubectl logs "$1"
+			kubectl logs $FOLLOW "$1"
 		else
-			kubectl logs "$1" -c "$2"
+			kubectl logs $FOLLOW "$1" -c "$2"
 		fi
+}
+
+function _k_ctx() {
+		if [ "$1" = "help" ]; then
+			echo "Usage: k ctx [context]"
+			echo "  No args: list contexts and show current"
+			echo "  With arg: switch to that context"
+			return
+		fi
+		if [ -z "$1" ]; then
+			kubectl config get-contexts
+		else
+			kubectl config use-context "$1"
+		fi
+}
+
+function _k_top() {
+		local RES="${1:-pods}"
+		[ $# -gt 0 ] && shift
+		case "$RES" in
+			pods|po)    kubectl top pods --all-namespaces "$@" ;;
+			nodes|no)   kubectl top nodes "$@" ;;
+			help|*)     echo "Usage: k top [pods|nodes]" ;;
+		esac
+}
+
+function _k_events() {
+		if [ -z "$1" ]; then
+			kubectl get events --all-namespaces --sort-by=.lastTimestamp
+		else
+			local PATTERN
+			PATTERN="$(IFS="|"; echo "$*")"
+			kubectl get events --all-namespaces --sort-by=.lastTimestamp | grep -E "^NAMESPACE|^LAST|$PATTERN"
+		fi
+}
+
+function _k_restart() {
+		if [ -z "$1" ]; then
+			echo "Usage: k restart <deployment>"
+			return
+		fi
+		kubectl rollout restart deployment "$1"
 }
 
 function _k_exec() {
@@ -107,15 +157,16 @@ function _k_delete() {
 		fi
 		local RESOURCE="$1"
 		shift
-		local PATTERN="$(IFS="|"; echo "$*")"
-		local NAMES=$(kubectl get "$RESOURCE" -o name | grep -E "$PATTERN")
+		local PATTERN NAMES
+		PATTERN="$(IFS="|"; echo "$*")"
+		NAMES=$(kubectl get "$RESOURCE" -o name | grep -E "$PATTERN")
 		if [ -z "$NAMES" ]; then
 			echo "No $RESOURCE match the pattern."
 			return
 		fi
 		echo "Deleting:"
 		echo "$NAMES"
-		read -p "Continue? (y/N): " confirm
+		read -rp "Continue? (y/N): " confirm
 		if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
 			echo "$NAMES" | xargs kubectl delete
 		else
@@ -286,7 +337,11 @@ function _k_help() {
 		echo "Commands:"
 		echo "  get <resource> [pattern ...]         		List resources (pods, svc, deploy, etc.) in all namespaces"
 		echo "  desc <resource> <name/pattern>   			Describe resource(s)"
-		echo "  logs <pod> [container]               		Show logs for pod (optionally for container)"
+		echo "  logs [-f] <pod> [container]          		Show logs for pod (optionally container; -f to follow)"
+		echo "  ctx [context]                        		List/switch kubectl contexts"
+		echo "  top [pods|nodes]                     		Show CPU/MEM usage"
+		echo "  events [pattern ...]                 		Show recent cluster events (filter optional)"
+		echo "  restart <deployment>                 		Roll-restart a deployment"
 		echo "  exec <pod> [container] [cmd]         		Exec into pod (optionally specify container and command)"
 		echo "  bash <pod> [container]               		Exec bash in pod"
 		echo "  sh <pod> [container]                 		Exec sh in pod"
@@ -322,6 +377,8 @@ function _k_help() {
 		echo "  k ns help"
 }
 function k() {
+    if [ -z "$1" ] || [ "$1" = "help" ]; then _k_help; return; fi
+    _shorti_require kubectl || return $?
     case "$1" in
         get) shift; _k_get "$@";;
         desc) shift; _k_describe "$@";;
@@ -338,7 +395,10 @@ function k() {
         ls) shift; _k_ls "$@";;
         ns) shift; _k_ns "$@";;
         tail) shift; _k_tail "$@";;
-        help|"" ) _k_help;;
+        ctx) shift; _k_ctx "$@";;
+        top) shift; _k_top "$@";;
+        events) shift; _k_events "$@";;
+        restart) shift; _k_restart "$@";;
         *) echo "Unknown command: $1. Use 'k help' for usage.";;
     esac
 }

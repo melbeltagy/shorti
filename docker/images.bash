@@ -6,7 +6,8 @@ _i_ls() {
     echo "============================================"
     echo "Found $(docker image ls -aq 2>/dev/null | wc -l) images."
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     docker image ls -a 2>/dev/null | grep -E "^REPOSITORY|$PATTERN"
     echo "============================================"
     echo "Found $(docker image ls -a --format '{{.ID}} {{.Repository}} {{.Tag}}' 2>/dev/null | grep -cE "$PATTERN") images."
@@ -21,7 +22,8 @@ _i_pull() {
       docker pull "$img"
     done
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     local IMAGES
     IMAGES=$(docker image ls --format '{{.Repository}}:{{.Tag}}' | grep -v '<none>' | grep -E "$PATTERN")
     if [ -z "$IMAGES" ]; then
@@ -41,7 +43,8 @@ _i_rm() {
     echo "Which image to delete? Specify one or more patterns."
     return 1
   fi
-  local PATTERN="$(IFS="|"; echo "$*")"
+  local PATTERN
+  PATTERN="$(IFS="|"; echo "$*")"
   local COUNT
   COUNT=$(docker image ls -a --format '{{.ID}} {{.Repository}} {{.Tag}}' 2>/dev/null | grep -cE "$PATTERN")
   if [ "$COUNT" -eq 0 ]; then
@@ -50,7 +53,7 @@ _i_rm() {
   fi
   echo "Removing the following $COUNT images..."
   docker image ls -a 2>/dev/null | grep -E "^REPOSITORY|$PATTERN"
-  read -p "Do you want to continue? (y/N)?" confirm
+  read -rp"Do you want to continue? (y/N)?" confirm
   if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
     docker image ls -a --format '{{.ID}} {{.Repository}} {{.Tag}}' 2>/dev/null | grep -E "$PATTERN" | awk '{print $1}' | xargs -r docker image rm
     echo "Images removed."
@@ -64,7 +67,8 @@ _i_info() {
     echo "Which image to inspect? Specify one or more patterns."
     return 1
   fi
-  local PATTERN="$(IFS="|"; echo "$*")"
+  local PATTERN
+  PATTERN="$(IFS="|"; echo "$*")"
   local IMAGES
   IMAGES=$(docker image ls --format '{{.ID}} {{.Repository}} {{.Tag}}' | grep -E "$PATTERN" | awk '{print $1}')
   if [ -z "$IMAGES" ]; then
@@ -82,7 +86,8 @@ _i_who() {
   if [ -z "$1" ]; then
     IMAGES=$(docker image ls --format '{{.ID}}|{{.Repository}}:{{.Tag}}' | grep -v ':<none>')
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     IMAGES=$(docker image ls --format '{{.ID}}|{{.Repository}}:{{.Tag}}' | grep -v ':<none>' | grep -E "$PATTERN")
   fi
   if [ -z "$IMAGES" ]; then
@@ -110,7 +115,8 @@ _i_hist() {
     echo "Which image? Specify one or more patterns."
     return 1
   fi
-  local PATTERN="$(IFS="|"; echo "$*")"
+  local PATTERN
+  PATTERN="$(IFS="|"; echo "$*")"
   local IMAGES
   IMAGES=$(docker image ls --format '{{.ID}} {{.Repository}} {{.Tag}}' | grep -E "$PATTERN" | awk '{print $1}')
   if [ -z "$IMAGES" ]; then
@@ -124,7 +130,7 @@ _i_hist() {
 }
 
 _i_prune() {
-  read -p "This will remove all unused images. Continue? (y/N): " confirm
+  read -rp"This will remove all unused images. Continue? (y/N): " confirm
   if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
     docker image prune
   else
@@ -132,30 +138,33 @@ _i_prune() {
   fi
 }
 
-function i() {
-  if [ -z "$1" ] || [ "$1" == "help" ]; then
-    echo "Usage: i <command> [pattern ...]"
-    echo "Commands:"
-    echo "  ls   [pattern ...]   List images (filter optional)"
-    echo "  pull [pattern ...]   Pull images (all or matching)"
-    echo "  rm   [pattern ...]   Remove matching images (with confirmation)"
-    echo "  info [pattern ...]   Inspect matching images"
-    echo "  who  [pattern ...]   Show containers using each matching image"
-    echo "  hist [pattern ...]   Show layer history for matching images"
-    echo "  prune                Remove unused images (with confirmation)"
-    echo ""
-    echo "Examples:"
-    echo "  i ls"
-    echo "  i ls ubuntu alpine"
-    echo "  i pull ubuntu alpine"
-    echo "  i rm oldimage tempimage"
-    echo "  i info myimage"
-    echo "  i who postgres"
-    echo "  i hist niis/xroad"
-    echo "  i prune"
-    return
-  fi
+_i_help() {
+  cat <<'EOF'
+Usage: i <command> [pattern ...]
+Commands:
+  ls   [pattern ...]   List images (filter optional)
+  pull [pattern ...]   Pull images (all or matching)
+  rm   [pattern ...]   Remove matching images (with confirmation)
+  info [pattern ...]   Inspect matching images
+  who  [pattern ...]   Show containers using each matching image
+  hist [pattern ...]   Show layer history for matching images
+  prune                Remove unused images (with confirmation)
 
+Examples:
+  i ls
+  i ls ubuntu alpine
+  i pull ubuntu alpine
+  i rm oldimage tempimage
+  i info myimage
+  i who postgres
+  i hist niis/xroad
+  i prune
+EOF
+}
+
+function i() {
+  if [ -z "$1" ] || [ "$1" == "help" ]; then _i_help; return; fi
+  _shorti_require docker || return $?
   local CMD="$1"
   shift
   case "$CMD" in
@@ -166,6 +175,6 @@ function i() {
     who)   _i_who "$@" ;;
     hist)  _i_hist "$@" ;;
     prune) _i_prune ;;
-    *)     echo "Unknown command: $CMD. Use 'i help' for usage."; return 1 ;;
+    *)     echo "Unknown command: $CMD" >&2; echo "" >&2; _i_help >&2; return 1 ;;
   esac
 }

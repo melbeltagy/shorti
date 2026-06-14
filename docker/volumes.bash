@@ -6,7 +6,8 @@ _v_ls() {
     echo "============================================"
     echo "Found $(docker volume ls -q | wc -l) volumes."
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     docker volume ls --format 'table {{.Driver}}\t{{.Name}}' | grep -E "^DRIVER|$PATTERN"
     echo "============================================"
     echo "Found $(docker volume ls --format '{{.Name}}' | grep -cE "$PATTERN") volumes."
@@ -25,7 +26,8 @@ _v_rm() {
     echo "Removing all $COUNT volumes:"
     docker volume ls --format 'table {{.Driver}}\t{{.Name}}'
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     NAMES=$(docker volume ls --format '{{.Name}}' | grep -E "$PATTERN")
     if [ -z "$NAMES" ]; then
       echo "No volumes match the pattern."
@@ -35,7 +37,7 @@ _v_rm() {
     echo "Removing the following $COUNT volumes:"
     echo "$NAMES"
   fi
-  read -p "Do you want to continue? (y/N)?" confirm
+  read -rp"Do you want to continue? (y/N)?" confirm
   if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
     echo "$NAMES" | xargs -r docker volume rm
     echo "Volumes removed."
@@ -53,7 +55,8 @@ _v_info() {
       return 1
     fi
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     VOLUMES=$(docker volume ls --format '{{.Name}}' | grep -E "$PATTERN")
     if [ -z "$VOLUMES" ]; then
       echo "No volumes match the pattern."
@@ -75,7 +78,8 @@ _v_who() {
       return 1
     fi
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     VOLUMES=$(docker volume ls --format '{{.Name}}' | grep -E "$PATTERN")
     if [ -z "$VOLUMES" ]; then
       echo "No volumes match the pattern."
@@ -105,13 +109,14 @@ _v_du() {
   if [ -z "$1" ]; then
     { printf 'VOLUME\tSIZE\tLINKS\n'; echo "$OUT"; } | column -t -s $'\t'
   else
-    local PATTERN="$(IFS="|"; echo "$*")"
+    local PATTERN
+    PATTERN="$(IFS="|"; echo "$*")"
     { printf 'VOLUME\tSIZE\tLINKS\n'; echo "$OUT" | grep -E "$PATTERN"; } | column -t -s $'\t'
   fi
 }
 
 _v_prune() {
-  read -p "This will remove all unused volumes. Continue? (y/N): " confirm
+  read -rp"This will remove all unused volumes. Continue? (y/N): " confirm
   if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
     docker volume prune
   else
@@ -119,28 +124,31 @@ _v_prune() {
   fi
 }
 
-function v() {
-  if [ -z "$1" ] || [ "$1" == "help" ]; then
-    echo "Usage: v <command> [pattern ...]"
-    echo "Commands:"
-    echo "  ls   [pattern ...]   List volumes (filter optional)"
-    echo "  rm   [pattern ...]   Remove all or matching volumes (with confirmation)"
-    echo "  info [pattern ...]   Inspect all or matching volumes"
-    echo "  who  [pattern ...]   Show containers using each volume"
-    echo "  du   [pattern ...]   Show on-disk size and link count for each volume"
-    echo "  prune                Remove all unused volumes (with confirmation)"
-    echo ""
-    echo "Examples:"
-    echo "  v ls"
-    echo "  v ls data backup"
-    echo "  v rm oldvolume tempvolume"
-    echo "  v info myvolume cache"
-    echo "  v who data"
-    echo "  v du"
-    echo "  v prune"
-    return
-  fi
+_v_help() {
+  cat <<'EOF'
+Usage: v <command> [pattern ...]
+Commands:
+  ls   [pattern ...]   List volumes (filter optional)
+  rm   [pattern ...]   Remove all or matching volumes (with confirmation)
+  info [pattern ...]   Inspect all or matching volumes
+  who  [pattern ...]   Show containers using each volume
+  du   [pattern ...]   Show on-disk size and link count for each volume
+  prune                Remove all unused volumes (with confirmation)
 
+Examples:
+  v ls
+  v ls data backup
+  v rm oldvolume tempvolume
+  v info myvolume cache
+  v who data
+  v du
+  v prune
+EOF
+}
+
+function v() {
+  if [ -z "$1" ] || [ "$1" == "help" ]; then _v_help; return; fi
+  _shorti_require docker || return $?
   local CMD="$1"
   shift
   case "$CMD" in
@@ -150,6 +158,6 @@ function v() {
     who)   _v_who "$@" ;;
     du)    _v_du "$@" ;;
     prune) _v_prune ;;
-    *)     echo "Unknown command: $CMD. Use 'v help' for usage."; return 1 ;;
+    *)     echo "Unknown command: $CMD" >&2; echo "" >&2; _v_help >&2; return 1 ;;
   esac
 }
