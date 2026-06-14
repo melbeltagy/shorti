@@ -1,0 +1,27 @@
+name: ShellCheck
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        env:
+          # Our helpers are *.bash with no shebang, so tell ShellCheck the
+          # dialect explicitly; --external-sources lets it follow `source`.
+          SHELLCHECK_OPTS: "--shell=bash --external-sources"
+        with:
+          severity: warning           # fail on warnings and above
+          check_together: "yes"       # treat sourced files as one unit
