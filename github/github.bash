@@ -28,7 +28,14 @@ function gprune() {
   fi    
 }
 
-alias clone='git clone'
-alias gs='git status'
+alias gb='git branch'
+alias gc='git clone'
+alias gcb='git checkout -b'
+alias gco='git checkout'
 alias gd='git diff'
+alias gf='git fetch'
 alias gl='git log --oneline -20'
+alias gp='git push'
+alias gpl='git pull'
+alias gprn='gprune'
+alias gs='git status'
