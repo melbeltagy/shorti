@@ -1,6 +1,6 @@
 # shorti <!-- omit in toc -->
 
-Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kubernetes, LXD, and git. Each tool lives in its own folder with its own README and a single dispatcher function (`d`, `i`, `v`, `n`, `dc`, `k`, `lx`).
+Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kubernetes, LXD, and git. Each tool lives in its own folder with its own README and a single dispatcher function (`d`, `i`, `v`, `n`, `dc`, `k`, `lx`, `lxi`, `lxv`, `lxn`, `lxp`).
 
 > [!NOTE]
 > Every shorti command is a thin shortcut on top of an existing CLI (`docker`, `kubectl`, `lxc`, `git`, ...). The goal is to type less, not to replace those tools. If you need a flag or behavior that isn't wrapped, drop down to the underlying command.
@@ -18,7 +18,7 @@ Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kube
 - [`docker/`](docker/README.md): `d` (containers), `i` (images), `v` (volumes), `n` (networks)
 - [`github/`](github/README.md): `gprune` and git shortcuts
 - [`k8s/`](k8s/README.md): `k` wrapper over `kubectl`
-- [`lxd/`](lxd/README.md): `lx` wrapper over `lxc`
+- [`lxd/`](lxd/README.md): `lx` (containers), `lxi` (images), `lxv` (volumes), `lxn` (networks), `lxp` (storage pools) over `lxc`
 
 Each helper accepts `help` as its first arg (e.g. `d help`, `k help`) and prints its own command list with examples. Run `shorti` to see all available helpers at a glance.
 

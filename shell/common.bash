@@ -43,6 +43,10 @@ Run '<cmd> help' for the full command list of any tool.
   dc       docker compose        (ls, ps, up, down, logs, tail, ...)
   k        kubernetes (kubectl)  (get, desc, logs, ctx, ns, top, events, ...)
   lx       LXD containers        (ls, bash, sh, cp, rm, start, stop, snap, ...)
+  lxi      LXD images            (ls, info, rm, pull)
+  lxv      LXD storage volumes   (ls, info, rm, du)
+  lxn      LXD networks          (ls, info, rm, mk, leases, conn, disc)
+  lxp      LXD storage pools     (ls, info, mk, rm)
   gprune   prune local git branches whose remote is gone
   gs/gd/gl git status / diff / log shortcuts
   aup      apt update + upgrade + autoremove
