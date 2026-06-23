@@ -27,8 +27,15 @@ _i_pull() {
     local IMAGES
     IMAGES=$(docker image ls --format '{{.Repository}}:{{.Tag}}' | grep -v '<none>' | grep -E "$PATTERN")
     if [ -z "$IMAGES" ]; then
-      echo "No images match the pattern."
-      return 1
+      # No local images match. Treat each argument as a concrete image
+      # reference and pull it directly from the registry.
+      echo "No local images match. Pulling as image reference(s)..."
+      local arg
+      for arg in "$@"; do
+        echo "Pulling $arg ..."
+        docker pull "$arg"
+      done
+      return
     fi
     echo "Pulling images matching: $PATTERN"
     while IFS= read -r img; do
@@ -143,7 +150,8 @@ _i_help() {
 Usage: i <command> [pattern ...]
 Commands:
   ls   [pattern ...]   List images (filter optional)
-  pull [pattern ...]   Pull images (all or matching)
+  pull [pattern ...]   Re-pull local images matching pattern (no arg = all);
+                       if none match, pull the argument(s) as image refs
   rm   [pattern ...]   Remove matching images (with confirmation)
   info [pattern ...]   Inspect matching images
   who  [pattern ...]   Show containers using each matching image
