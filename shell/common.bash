@@ -2,10 +2,9 @@ alias o='open .'
 alias cls=clear
 
 if command -v lsd >/dev/null 2>&1; then
-    alias ll='lsd -AlhF --color=auto'
-else
-    alias ll='ls -AlhF --color=auto'
+    alias lls='lsd -AlhF --color=auto'
 fi
+alias ll='ls -AlhF --color=auto'
 
 function print() {
     echo -e "\033[0;32m$1\033[0m"
