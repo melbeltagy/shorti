@@ -46,8 +46,7 @@ Run '<cmd> help' for the full command list of any tool.
   lxv      LXD storage volumes   (ls, info, rm, du)
   lxn      LXD networks          (ls, info, rm, mk, leases, conn, disc)
   lxp      LXD storage pools     (ls, info, mk, rm)
-  gprune   prune local git branches whose remote is gone
-  gs/gd/gl git status / diff / log shortcuts
+  g        git shortcuts         (b, c, cb, co, d, f, l, p, pl, prune, s)
   aup      apt update + upgrade + autoremove
 EOF
 }

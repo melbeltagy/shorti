@@ -16,7 +16,7 @@ Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kube
 
 - [`compose/`](compose/README.md): `dc` wrapper over `docker compose`
 - [`docker/`](docker/README.md): `d` (containers), `i` (images), `v` (volumes), `n` (networks)
-- [`github/`](github/README.md): `gprune` and git shortcuts
+- [`github/`](github/README.md): `g` wrapper over `git` (incl. `g prune`)
 - [`k8s/`](k8s/README.md): `k` wrapper over `kubectl`
 - [`lxd/`](lxd/README.md): `lx` (containers), `lxi` (images), `lxv` (volumes), `lxn` (networks), `lxp` (storage pools) over `lxc`
 

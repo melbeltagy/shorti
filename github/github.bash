@@ -1,4 +1,4 @@
-function gprune() {
+function _g_prune() {
   # Update remote references, pruning any branches no longer existing on the remote
   git fetch --prune
 
@@ -25,17 +25,27 @@ function gprune() {
       fi
   else
       echo "Operation cancelled."
-  fi    
+  fi
 }
 
-alias gb='git branch'
-alias gc='git clone'
-alias gcb='git checkout -b'
-alias gco='git checkout'
-alias gd='git diff'
-alias gf='git fetch'
-alias gl='git log --oneline -20'
-alias gp='git push'
-alias gpl='git pull'
-alias gprn='gprune'
-alias gs='git status'
+# Subcommand dispatcher: g <command> [args...]. "g" stands for git.
+function g() {
+  local cmd="$1"
+  shift 2>/dev/null
+
+  case "$cmd" in
+    b)     git branch "$@" ;;
+    c)     git clone "$@" ;;
+    cb)    git checkout -b "$@" ;;
+    co)    git checkout "$@" ;;
+    d)     git diff "$@" ;;
+    f)     git fetch "$@" ;;
+    l)     git log --oneline -20 "$@" ;;
+    p)     git push "$@" ;;
+    pl)    git pull "$@" ;;
+    prune) _g_prune "$@" ;;
+    s)     git status "$@" ;;
+    "")    git status ;;
+    *)     git "$cmd" "$@" ;;  # fall through to plain git
+  esac
+}

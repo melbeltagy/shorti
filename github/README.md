@@ -1,21 +1,20 @@
 # github: git workflow helpers
 
-Light shortcuts on top of `git` (and eventually `gh`).
+Light shortcuts on top of `git` (and eventually `gh`), exposed through a single `g` dispatcher (`g` stands for `git`).
 
-- `gprune`: fetches with `--prune`, then deletes local branches whose remotes were removed (with confirmation)
-- `gb`: `git branch`
-- `gc`: `git clone`
-- `gcb`: `git checkout -b`
-- `gco`: `git checkout`
-- `gd`: `git diff`
-- `gf`: `git fetch`
-- `gl`: `git log --oneline -20`
-- `gp`: `git push`
-- `gpl`: `git pull`
-- `gprn`: alias for `gprune`
-- `gs`: `git status`
+- `g b`: `git branch`
+- `g c`: `git clone`
+- `g cb`: `git checkout -b`
+- `g co`: `git checkout`
+- `g d`: `git diff`
+- `g f`: `git fetch`
+- `g l`: `git log --oneline -20`
+- `g p`: `git push`
+- `g pl`: `git pull`
+- `g prune`: fetches with `--prune`, then deletes local branches whose remotes were removed (with confirmation)
+- `g s`: `git status`
 
-A subcommand dispatcher (e.g. `g status`, `g diff`) may follow once enough commands exist to justify it.
+Any extra arguments are passed through (e.g. `g co main`, `g p origin main`). Unknown subcommands fall through to plain `git`, so `g status` and `g diff --stat` work too. Calling `g` with no arguments runs `git status`.
 
 ## Prerequisites
 
