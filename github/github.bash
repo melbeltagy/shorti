@@ -28,10 +28,37 @@ function _g_prune() {
   fi
 }
 
+_g_help() {
+  cat <<'EOF'
+Usage: g <command> [args ...]   ("g" stands for git)
+Commands:
+  b   [args ...]   git branch
+  c   [args ...]   git clone
+  cb  [args ...]   git checkout -b
+  co  [args ...]   git checkout
+  d   [args ...]   git diff
+  f   [args ...]   git fetch
+  l   [args ...]   git log --oneline -20
+  p   [args ...]   git push
+  pl  [args ...]   git pull
+  prune            Prune local branches whose remote is gone (with confirmation)
+  s   [args ...]   git status
+
+Examples:
+  g s
+  g co main
+  g cb feature/x
+  g p origin main
+  g prune
+EOF
+}
+
 # Subcommand dispatcher: g <command> [args...]. "g" stands for git.
 function g() {
+  if [ -z "$1" ] || [ "$1" == "help" ]; then _g_help; return; fi
+  _shorti_require git || return $?
   local cmd="$1"
-  shift 2>/dev/null
+  shift
 
   case "$cmd" in
     b)     git branch "$@" ;;
@@ -45,7 +72,6 @@ function g() {
     pl)    git pull "$@" ;;
     prune) _g_prune "$@" ;;
     s)     git status "$@" ;;
-    "")    git status ;;
-    *)     git "$cmd" "$@" ;;  # fall through to plain git
+    *)     echo "Unknown command: $cmd" >&2; echo "" >&2; _g_help >&2; return 1 ;;
   esac
 }

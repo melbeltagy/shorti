@@ -14,7 +14,7 @@ Light shortcuts on top of `git` (and eventually `gh`), exposed through a single 
 - `g prune`: fetches with `--prune`, then deletes local branches whose remotes were removed (with confirmation)
 - `g s`: `git status`
 
-Any extra arguments are passed through (e.g. `g co main`, `g p origin main`). Unknown subcommands fall through to plain `git`, so `g status` and `g diff --stat` work too. Calling `g` with no arguments runs `git status`.
+Any extra arguments are passed through (e.g. `g co main`, `g p origin main`). Run `g` (or `g help`) with no arguments to print the usage; an unknown subcommand prints an error plus the usage and returns non-zero.
 
 ## Prerequisites
 
