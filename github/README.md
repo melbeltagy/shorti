@@ -1,20 +1,11 @@
 # github: git workflow helpers
 
-Light shortcuts on top of `git` (and eventually `gh`), exposed through a single `g` dispatcher (`g` stands for `git`).
+`g` is `git` with a couple of power-ups: every subcommand passes straight through to `git` (so `g status`, `g branch`, `g rebase -i`, `g push origin main` all work exactly like their `git` equivalents), except for two overrides that add value:
 
-- `g b`: `git branch`
-- `g c`: `git clone`
-- `g cb`: `git checkout -b`
-- `g co`: `git checkout`
-- `g d`: `git diff`
-- `g f`: `git fetch`
-- `g l`: `git log --oneline -20`
-- `g p`: `git push`
-- `g pl`: `git pull`
+- `g l`: `git log --oneline -20` (short, recent log)
 - `g prune`: fetches with `--prune`, then deletes local branches whose remotes were removed (with confirmation)
-- `g s`: `git status`
 
-Any extra arguments are passed through (e.g. `g co main`, `g p origin main`). Run `g` (or `g help`) with no arguments to print the usage; an unknown subcommand prints an error plus the usage and returns non-zero.
+Everything else is just `git`, so there are no abbreviations to memorize or keep in sync.
 
 ## Prerequisites
 
