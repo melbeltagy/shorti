@@ -122,26 +122,57 @@ _dc_tail() {
   docker compose "${DC_PROFILE_FLAGS[@]}" logs -f "${DC_SERVICES[@]}"
 }
 
-# Print "Title:" followed by indented content, optionally filtered by regex
-# and optionally wrapped in an ANSI color (e.g. $'\033[33m').
+# Print "Title:" followed by indented content, optionally filtered by regex.
+# If $status_fn is given, it's called as `$status_fn "$line"` for each line
+# and must print "<prefix>\t<suffix>" (prefix carries the ANSI color/marker,
+# printed right before the line; suffix is printed uncolored right after).
+# With no status_fn, lines are printed plain.
 _dc_print_section() {
   local title="$1"
   local content="$2"
   local pattern="$3"
-  local color="${4:-}"
+  local status_fn="${4:-}"
   echo "$title:"
   if [ -n "$pattern" ] && [ -n "$content" ]; then
     content=$(echo "$content" | grep -E "$pattern" || true)
   fi
   if [ -z "$content" ]; then
     echo "  (none)"
-  elif [ -n "$color" ]; then
+  elif [ -n "$status_fn" ]; then
     while IFS= read -r line; do
       [ -z "$line" ] && continue
-      printf '  %s%s\033[0m\n' "$color" "$line"
+      local prefix suffix
+      IFS=$'\t' read -r prefix suffix < <("$status_fn" "$line")
+      printf '  %s%s\033[0m%s\n' "$prefix" "$line" "$suffix"
     done <<< "$content"
   else
     awk '{print "  " $0}' <<< "$content"
+  fi
+}
+
+_dc_profile_status() { printf '\033[33m\t\n'; }
+
+_dc_service_status() {
+  if [ -n "${is_running[$1]+_}" ]; then
+    printf '\033[32m● \t (running)\n'
+  else
+    printf '\033[31m○ \t (not running)\n'
+  fi
+}
+
+_dc_volume_status() {
+  if [ -n "${volume_size[$1]+_}" ]; then
+    printf '\033[32m● \t (created - %s)\n' "${volume_size[$1]}"
+  else
+    printf '\033[31m○ \t (not created)\n'
+  fi
+}
+
+_dc_network_status() {
+  if [ -n "${network_exists[$1]+_}" ]; then
+    printf '\033[32m● \t (created)\n'
+  else
+    printf '\033[31m○ \t (not created)\n'
   fi
 }
 
@@ -152,13 +183,17 @@ _dc_ls() {
   local profiles
   profiles=$(docker compose config --profiles 2>/dev/null)
 
-  # Activate every profile so the services list also includes profile-gated ones.
+  # Activate every profile so the services/volumes list also includes profile-gated ones.
   local profile_flags=()
   while IFS= read -r p; do
     [ -n "$p" ] && profile_flags+=(--profile "$p")
   done <<< "$profiles"
   local services
   services=$(docker compose "${profile_flags[@]}" config --services 2>/dev/null)
+  local volumes
+  volumes=$(docker compose "${profile_flags[@]}" config --volumes 2>/dev/null)
+  local networks
+  networks=$(docker compose "${profile_flags[@]}" config --networks 2>/dev/null)
 
   # Build a set of currently running services for status markers.
   local -A is_running=()
@@ -166,24 +201,43 @@ _dc_ls() {
     [ -n "$s" ] && is_running["$s"]=1
   done < <(docker compose ps --services 2>/dev/null)
 
-  _dc_print_section "Profiles" "$profiles" "$PATTERN" $'\033[33m'
-  echo ""
+  # Resolve the compose project name (first line of `docker compose config`)
+  # so we can match volumes back to their declared name via compose labels.
+  local project
+  project=$(docker compose config 2>/dev/null | sed -n 's/^name: *//p;q')
 
-  echo "Services:"
-  local filtered="$services"
-  [ -n "$PATTERN" ] && [ -n "$services" ] && filtered=$(echo "$services" | grep -E "$PATTERN" || true)
-  if [ -z "$filtered" ]; then
-    echo "  (none)"
-  else
-    while IFS= read -r s; do
-      [ -z "$s" ] && continue
-      if [ -n "${is_running[$s]+_}" ]; then
-        printf '  \033[32m● %s\033[0m\n' "$s"
-      else
-        printf '  \033[31m○ %s\033[0m\n' "$s"
-      fi
-    done <<< "$filtered"
-  fi
+  # Map each declared volume name to its disk usage, keyed by the
+  # com.docker.compose.volume label (falling back to the docker volume name
+  # itself, e.g. for external volumes which carry no compose labels).
+  local -A volume_size=()
+  while IFS='|' read -r vname vsize vlabels; do
+    [ -z "$vname" ] && continue
+    local key=""
+    if [[ ",$vlabels," == *",com.docker.compose.project=$project,"* ]]; then
+      key=$(grep -oE ',com\.docker\.compose\.volume=[^,]*,' <<< ",$vlabels," | sed -E 's/,com\.docker\.compose\.volume=([^,]*),/\1/')
+    fi
+    volume_size["${key:-$vname}"]="$vsize"
+  done < <(docker system df -v --format '{{range .Volumes}}{{.Name}}|{{.Size}}|{{.Labels}}\n{{end}}' 2>/dev/null)
+
+  # Same idea for networks, keyed by com.docker.compose.network (falling back
+  # to the docker network name itself for external networks).
+  local -A network_exists=()
+  while IFS='|' read -r nname nlabels; do
+    [ -z "$nname" ] && continue
+    local key=""
+    if [[ ",$nlabels," == *",com.docker.compose.project=$project,"* ]]; then
+      key=$(grep -oE ',com\.docker\.compose\.network=[^,]*,' <<< ",$nlabels," | sed -E 's/,com\.docker\.compose\.network=([^,]*),/\1/')
+    fi
+    network_exists["${key:-$nname}"]=1
+  done < <(docker network ls --format '{{.Name}}|{{.Labels}}' 2>/dev/null)
+
+  _dc_print_section "Profiles" "$profiles" "$PATTERN" _dc_profile_status
+  echo ""
+  _dc_print_section "Services" "$services" "$PATTERN" _dc_service_status
+  echo ""
+  _dc_print_section "Volumes" "$volumes" "$PATTERN" _dc_volume_status
+  echo ""
+  _dc_print_section "Networks" "$networks" "$PATTERN" _dc_network_status
 }
 
 _dc_ps() {
@@ -204,7 +258,7 @@ Usage: dc <command> [:profile ...] [service-pattern ...]
   Other args are service-name patterns. Both are regex, combined with '|'.
 
 Commands:
-  ls     [pattern ...]                  List profiles and services defined in the compose file
+  ls     [pattern ...]                  List profiles, services, volumes, and networks defined in the compose file
   ps     [:profile ...] [service ...]   List running compose containers
   up     [:profile ...] [service ...]   Start services (detached)
   stop   [:profile ...] [service ...]   Stop services
@@ -215,8 +269,8 @@ Commands:
   tail   [:profile ...] [service ...]   Follow (-f) logs
 
 Examples:
-  dc ls                       List all profiles and services
-  dc ls web                   Filter profiles/services matching 'web'
+  dc ls                       List all profiles, services, volumes, and networks
+  dc ls web                   Filter profiles/services/volumes/networks matching 'web'
   dc ps                       List running compose containers
   dc ps :dev web              Running services in 'dev' profile matching 'web'
   dc up                       Start everything
