@@ -1,13 +1,14 @@
 # shorti <!-- omit in toc -->
 
-Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kubernetes, LXD, and git. Each tool lives in its own folder with its own README and a single dispatcher function (`d`, `i`, `v`, `n`, `dc`, `k`, `lx`, `lxi`, `lxv`, `lxn`, `lxp`).
+Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kubernetes, LXD, git, and snap. Each tool lives in its own folder with its own README and a single dispatcher function (`d`, `i`, `v`, `n`, `dc`, `k`, `lx`, `lxi`, `lxv`, `lxn`, `lxp`, `sn`, `ds`), alongside a `shell/` folder for system upkeep.
 
 > [!NOTE]
-> Every shorti command is a thin shortcut on top of an existing CLI (`docker`, `kubectl`, `lxc`, `git`, ...). The goal is to type less, not to replace those tools. If you need a flag or behavior that isn't wrapped, drop down to the underlying command.
+> Every shorti command is a thin shortcut on top of an existing CLI (`docker`, `kubectl`, `lxc`, `git`, `apt`, `snap`, ...). The goal is to type less, not to replace those tools. If you need a flag or behavior that isn't wrapped, drop down to the underlying command.
 
 ## Table of Contents <!-- omit in toc -->
 
 - [What's included](#whats-included)
+- [Prerequisites](#prerequisites)
 - [Setup](#setup)
 - [Uninstall](#uninstall)
 - [License](#license)
@@ -22,6 +23,18 @@ Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kube
 - [`shell/`](shell/README.md): `sn` (snap: refresh, orphan report, cleanup), `ds` (disk space: usage and cleanup), `aup` (apt + snap system update), plus shared helpers and aliases
 
 Each helper accepts `help` as its first arg (e.g. `d help`, `k help`) and prints its own command list with examples. Run `shorti` to see all available helpers at a glance.
+
+## Prerequisites
+
+- bash 4+ (`dc ls` uses associative arrays)
+- `column`, for the aligned tables
+- The CLI each helper wraps, with access to whatever it talks to:
+  - `docker`, with permission to reach the daemon
+  - `kubectl`, configured against a cluster
+  - `lxc`, with your user in the `lxd` group
+  - `git`
+  - `apt`, and optionally `snap`. The `shell/` helpers are Linux only: there is no apt, snap or systemd on macOS.
+- Extras specific to one helper: [compose](compose/README.md#prerequisites), [shell](shell/README.md#prerequisites)
 
 ## Setup
 

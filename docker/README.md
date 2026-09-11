@@ -8,9 +8,3 @@ Tighter shortcuts over `docker container`, `docker image`, `docker volume`, and 
 - **`n`** networks: `ls`, `info`, `rm`, `mk`, `conn`, `disc`, `prune`
 
 Run `<tool> help` for the full command list with examples (e.g. `d help`, `i help`, `v help`, `n help`).
-
-## Prerequisites
-
-- bash 4+
-- `docker` CLI with permission to talk to the daemon
-- `column` (for aligned tables in `v who`, `v du`, `d stats`)

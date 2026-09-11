@@ -6,8 +6,3 @@
 - `g prune`: fetches with `--prune`, then deletes local branches whose remotes were removed (with confirmation)
 
 Everything else is just `git`, so there are no abbreviations to memorize or keep in sync.
-
-## Prerequisites
-
-- bash
-- `git`

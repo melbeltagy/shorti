@@ -11,6 +11,7 @@ Run `dc help` for the full command list with examples.
 
 ## Prerequisites
 
-- bash 4+
-- `docker` CLI with the `compose` plugin
+General ones live in the [root README](../README.md#prerequisites). Specific to `dc`:
+
+- The `compose` plugin for `docker`
 - A `docker-compose.yml` / `compose.yaml` in the directory where you run the command(s)

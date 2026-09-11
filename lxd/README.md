@@ -16,8 +16,3 @@ bridge, so `lx ls` already shows IPv4/IPv6.
 
 Run `<tool> help` for the full command list with examples (e.g. `lx help`,
 `lxi help`, `lxv help`, `lxn help`, `lxp help`).
-
-## Prerequisites
-
-- bash
-- `lxc` CLI; LXD installed and the user added to the `lxd` group
