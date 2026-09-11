@@ -19,6 +19,7 @@ Terser shell shortcuts for the tools you use daily: Docker, Docker Compose, Kube
 - [`github/`](github/README.md): `g` wrapper over `git` (incl. `g prune`)
 - [`k8s/`](k8s/README.md): `k` wrapper over `kubectl`
 - [`lxd/`](lxd/README.md): `lx` (containers), `lxi` (images), `lxv` (volumes), `lxn` (networks), `lxp` (storage pools) over `lxc`
+- [`shell/`](shell/README.md): `sn` (snap: refresh, orphan report, cleanup), `ds` (disk space: usage and cleanup), `aup` (apt + snap system update), plus shared helpers and aliases
 
 Each helper accepts `help` as its first arg (e.g. `d help`, `k help`) and prints its own command list with examples. Run `shorti` to see all available helpers at a glance.
 

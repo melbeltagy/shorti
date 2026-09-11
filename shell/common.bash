@@ -22,11 +22,21 @@ function aup() {
     _shorti_require apt || return $?
     print "**** Updating package lists..."
     sudo apt update
+    # `upgrade`, not `full-upgrade`: with -y in play we don't want removals unprompted.
     print "**** Upgrading installed packages..."
     sudo apt upgrade -y
     print "**** Removing unnecessary packages..."
-    sudo apt autoremove -y && sudo apt autoclean -y
+    sudo apt autoremove --purge -y && sudo apt autoclean -y
+    # Same require guard, silenced: snapd is optional, so skip rather than fail.
+    if _shorti_require snap 2>/dev/null; then
+        print "**** Refreshing snaps..."
+        _sn_refresh
+    fi
     print "**** System update complete."
+    if [ -f /var/run/reboot-required ]; then
+        print "**** Reboot required."
+        [ -r /var/run/reboot-required.pkgs ] && sort -u /var/run/reboot-required.pkgs
+    fi
 }
 
 function shorti() {
@@ -47,6 +57,10 @@ Run '<cmd> help' for the full command list of any tool.
   lxn      LXD networks          (ls, info, rm, mk, leases, conn, disc)
   lxp      LXD storage pools     (ls, info, mk, rm)
   g        git passthrough       (any git subcommand; plus l, prune)
-  aup      apt update + upgrade + autoremove
+  sn       snap                  (up, orphans, clean)
+  ds       disk space            (usage, top, clean [sudo])
+  aup      apt + snap update, autoremove, reboot check [sudo]
+
+[sudo] marks commands that need root.
 EOF
 }
