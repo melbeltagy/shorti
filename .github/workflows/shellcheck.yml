@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: ShellCheck
-        uses: ludeeus/action-shellcheck@1.1.0
+        uses: ludeeus/action-shellcheck@2.0.0
         env:
           # Our helpers are *.bash with no shebang, so tell ShellCheck the
           # dialect explicitly; --external-sources lets it follow `source`.
