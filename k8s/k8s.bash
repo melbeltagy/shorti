@@ -333,48 +333,50 @@ function _k_tail() {
 }
 
 function _k_help() {
-		echo "Usage: k <command> [args...]"
-		echo "Commands:"
-		echo "  get <resource> [pattern ...]         		List resources (pods, svc, deploy, etc.) in all namespaces"
-		echo "  desc <resource> <name/pattern>   			Describe resource(s)"
-		echo "  logs [-f] <pod> [container]          		Show logs for pod (optionally container; -f to follow)"
-		echo "  ctx [context]                        		List/switch kubectl contexts"
-		echo "  top [pods|nodes]                     		Show CPU/MEM usage"
-		echo "  events [pattern ...]                 		Show recent cluster events (filter optional)"
-		echo "  restart <deployment>                 		Roll-restart a deployment"
-		echo "  exec <pod> [container] [cmd]         		Exec into pod (optionally specify container and command)"
-		echo "  bash <pod> [container]               		Exec bash in pod"
-		echo "  sh <pod> [container]                 		Exec sh in pod"
-		echo "  apply <file>                         		Apply manifest file"
-		echo "  del <resource> <name/pattern>     			Delete resource(s)"
-		echo "  cp <src> <dest>                      		Copy files to/from pods"
-		echo "  edit <resource> <name>               		Edit resource"
-		echo "  pf <pod/svc> <local>:<remote>  				Port forward"
-		echo "  types                                		List all resource types available to kubectl"
-		echo "  ls [types] [filter ...]               		List resources by type (comma-separated), optionally filter output"
-		echo "      k ls help                               	Show usage and supported types for k ls"
-		echo "  ns [namespace]                       		Switch active namespace (empty to reset to default)"
-		echo "      k ns help                               	Show usage for k ns"
-		echo "  tail <pod> [container] [lines]      		Tail logs for a pod (optionally container), default tail=100 with follow"
-		echo ""
-		echo "Examples:"
-		echo "  k get pods"
-		echo "  k get svc myapp"
-		echo "  k desc pod mypod"
-		echo "  k logs mypod"
-		echo "  k exec mypod"
-		echo "  k bash mypod"
-		echo "  k del pod mypod"
-		echo "  k apply ./deploy.yaml"
-		echo "  k cp ./file.txt mypod:/tmp/file.txt"
-		echo "  k edit deployment myapp"
-		echo "  k pf svc/myapp 8080:80"
-		echo "  k types"
-		echo "  k ls"
-		echo "  k ls po,svc,deployment pod_name_to_filter"
-		echo "  k ls help"
-		echo "  k ns my-namespace"
-		echo "  k ns help"
+	cat <<'EOF'
+Usage: k <command> [args...]
+Commands:
+  get <resource> [pattern ...]    List resources (pods, svc, deploy, etc.) in all namespaces
+  desc <resource> <name/pattern>  Describe resource(s)
+  logs [-f] <pod> [container]     Show logs for pod (optionally container; -f to follow)
+  ctx [context]                   List/switch kubectl contexts
+  top [pods|nodes]                Show CPU/MEM usage
+  events [pattern ...]            Show recent cluster events (filter optional)
+  restart <deployment>            Roll-restart a deployment
+  exec <pod> [container] [cmd]    Exec into pod (optionally specify container and command)
+  bash <pod> [container]          Exec bash in pod
+  sh <pod> [container]            Exec sh in pod
+  apply <file>                    Apply manifest file
+  del <resource> <name/pattern>   Delete resource(s)
+  cp <src> <dest>                 Copy files to/from pods
+  edit <resource> <name>          Edit resource
+  pf <pod/svc> <local>:<remote>   Port forward
+  types                           List all resource types available to kubectl
+  ls [types] [filter ...]         List resources by type (comma-separated), optionally filter output
+    k ls help                     Show usage and supported types for k ls
+  ns [namespace]                  Switch active namespace (empty to reset to default)
+    k ns help                     Show usage for k ns
+  tail <pod> [container] [lines]  Tail logs for a pod (optionally container), default tail=100 with follow
+
+Examples:
+  k get pods
+  k get svc myapp
+  k desc pod mypod
+  k logs mypod
+  k exec mypod
+  k bash mypod
+  k del pod mypod
+  k apply ./deploy.yaml
+  k cp ./file.txt mypod:/tmp/file.txt
+  k edit deployment myapp
+  k pf svc/myapp 8080:80
+  k types
+  k ls
+  k ls po,svc,deployment pod_name_to_filter
+  k ls help
+  k ns my-namespace
+  k ns help
+EOF
 }
 function k() {
     if [ -z "$1" ] || [ "$1" = "help" ]; then _k_help; return; fi
@@ -399,6 +401,6 @@ function k() {
         top) shift; _k_top "$@";;
         events) shift; _k_events "$@";;
         restart) shift; _k_restart "$@";;
-        *) echo "Unknown command: $1. Use 'k help' for usage.";;
+        *) echo "Unknown command: $1" >&2; echo "" >&2; _k_help >&2; return 1;;
     esac
 }
